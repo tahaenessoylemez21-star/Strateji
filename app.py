@@ -15,21 +15,18 @@ def harita_olustur(boyut=8):
     return harita
 
 def bot_hamle(oda_id):
-    time.sleep(1)
+    time.sleep(1.5)
     if oda_id not in oyunlar:return
     oyun=oyunlar[oda_id]
+    if not oyun['basladi']:return
     if oyun['oyuncular'][oyun['aktif']]!='🤖 Bot':return
     harita=oyun['harita']
     bot_kareler=[(i,j)for i in range(8)for j in range(8)if harita[i][j]['sahip']=='🤖 Bot'and harita[i][j]['guc']>1]
-    if not bot_kareler:
-        sonraki_tur(oda_id)
-        return
+    if not bot_kareler:sonraki_tur(oda_id);return
     ki,kj=random.choice(bot_kareler)
     komsular=[(ki-1,kj),(ki+1,kj),(ki,kj-1),(ki,kj+1)]
     gecerli=[(hi,hj)for hi,hj in komsular if 0<=hi<8 and 0<=hj<8 and not harita[hi][hj]['engel']]
-    if not gecerli:
-        sonraki_tur(oda_id)
-        return
+    if not gecerli:sonraki_tur(oda_id);return
     hi,hj=random.choice(gecerli)
     _hamle_yap_logic(oda_id,'🤖 Bot',ki,kj,hi,hj)
 
@@ -38,25 +35,15 @@ def _hamle_yap_logic(oda_id,oyuncu,kx,ky,hx,hy):
     oyun=oyunlar[oda_id]
     kaynak=oyun['harita'][kx][ky]
     hedef=oyun['harita'][hx][hy]
-    if kaynak['sahip']!=oyuncu or kaynak['guc']<2:
-        sonraki_tur(oda_id)
-        return
+    if kaynak['sahip']!=oyuncu or kaynak['guc']<2:sonraki_tur(oda_id);return
     gonderilen=kaynak['guc']-1
     kaynak['guc']=1
-    if hedef['sahip']==oyuncu:
-        hedef['guc']+=gonderilen
-    elif hedef['sahip']is None:
-        hedef['sahip']=oyuncu
-        hedef['guc']=gonderilen
+    if hedef['sahip']==oyuncu:hedef['guc']+=gonderilen
+    elif hedef['sahip']is None:hedef['sahip']=oyuncu;hedef['guc']=gonderilen
     else:
-        if gonderilen>hedef['guc']:
-            hedef['sahip']=oyuncu
-            hedef['guc']=gonderilen-hedef['guc']
-        elif gonderilen==hedef['guc']:
-            hedef['sahip']=None
-            hedef['guc']=0
-        else:
-            hedef['guc']-=gonderilen
+        if gonderilen>hedef['guc']:hedef['sahip']=oyuncu;hedef['guc']=gonderilen-hedef['guc']
+        elif gonderilen==hedef['guc']:hedef['sahip']=None;hedef['guc']=0
+        else:hedef['guc']-=gonderilen
     sonraki_tur(oda_id)
 
 def sonraki_tur(oda_id):
@@ -69,14 +56,14 @@ def sonraki_tur(oda_id):
     for s in oyun['harita']:
         for h in s:
             if h['sahip']:sayimlar[h['sahip']]=sayimlar.get(h['sahip'],0)+1
-    kazanan=None
     toplam=sum(sayimlar.values())
+    kazanan=None
     for o,s in sayimlar.items():
         if s==toplam and toplam>0:kazanan=o
     if kazanan:
         socketio.emit('oyun_bitti',{'kazanan':kazanan,'istatistik':sayimlar},room=oda_id)
         return
-    socketio.emit('hamle_sonucu',{'harita':oyun['harita'],'aktif_oyuncu':aktif,'tur':oyun['tur'],'sure':oyun['sure']},room=oda_id)
+    socketio.emit('hamle_sonucu',{'harita':oyun['harita'],'aktif_oyuncu':aktif,'tur':oyun['tur']},room=oda_id)
     if aktif=='🤖 Bot':
         t=threading.Thread(target=bot_hamle,args=(oda_id,))
         t.daemon=True
@@ -116,7 +103,6 @@ input::placeholder{color:#555}
 .btn{width:100%;padding:13px;margin-top:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#e94560,#c73652);color:white;font-size:16px;font-family:'Orbitron',sans-serif;cursor:pointer;letter-spacing:1px;transition:all 0.3s}
 .btn:disabled{opacity:0.4;cursor:not-allowed}
 .btn-yesil{background:linear-gradient(135deg,#4ecdc4,#2ea89f)}
-.btn-sari{background:linear-gradient(135deg,#ffd700,#ffa500);color:#000}
 #bilgi{margin:8px 0;font-size:15px;color:#ffd700;text-align:center;min-height:22px}
 #sure-goster{font-family:'Orbitron',sans-serif;font-size:22px;color:#e94560;text-align:center;margin:5px 0}
 .harita{display:inline-grid;gap:3px;margin:10px auto;background:#0a0a1a;padding:8px;border-radius:12px;border:1px solid #e9456022}
@@ -124,17 +110,16 @@ input::placeholder{color:#555}
 .hucre:hover{transform:scale(1.1);z-index:1}
 .hucre.secili{border:2px solid #ffd700;box-shadow:0 0 10px #ffd700}
 .hucre.hedef{border:2px solid #ff6b6b;box-shadow:0 0 10px #ff6b6b}
-.hucre.engel{background:#333;cursor:not-allowed;font-size:16px}
+.hucre.engel{background:#2a2a2a;cursor:not-allowed}
 .skorlar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:5px 0}
 .skor-kart{background:#16213e;border-radius:8px;padding:5px 10px;font-size:13px;border:1px solid #ffffff22}
 .oda-kodu{background:#16213e;border:1px solid #ffd70044;border-radius:8px;padding:8px;text-align:center;margin:8px 0;font-size:22px;letter-spacing:4px;color:#ffd700;font-family:'Orbitron',sans-serif}
-.oyuncu-listesi{background:#16213e;border-radius:8px;padding:8px;margin:5px 0;font-size:13px}
+.oyuncu-listesi{background:#0a0a1a;border-radius:8px;padding:8px;margin:5px 0;font-size:14px;line-height:2}
 .sohbet-kutu{background:#16213e;border-radius:8px;padding:8px;margin:8px 0;width:100%;max-width:420px}
 .sohbet-mesajlar{height:80px;overflow-y:auto;font-size:12px;margin-bottom:5px}
 .sohbet-mesajlar p{margin:2px 0;padding:2px 5px}
 .sohbet-giris{display:flex;gap:5px}
 .sohbet-giris input{margin:0;padding:8px;font-size:13px}
-.sohbet-giris button{width:60px;padding:8px;margin:0;font-size:12px}
 .istat-kart{background:#16213e;border-radius:12px;padding:15px;text-align:center;margin:5px 0;border:1px solid #e9456033}
 .kazanan-text{font-family:'Orbitron',sans-serif;font-size:20px;color:#ffd700;margin-bottom:10px}
 .tur-bilgi{font-size:13px;color:#888;text-align:center}
@@ -157,7 +142,7 @@ input::placeholder{color:#555}
 
 <div id="bekleme" style="display:none" class="card">
 <div class="oda-kodu" id="oda-kodu-goster"></div>
-<div style="color:#888;font-size:12px;text-align:center;margin-bottom:10px">Arkadaşına bu kodu gönder!</div>
+<div style="color:#888;font-size:12px;text-align:center;margin-bottom:10px" id="oda-aciklama"></div>
 <div class="oyuncu-listesi" id="oyuncu-listesi"></div>
 <button class="btn btn-yesil" id="baslat-btn" onclick="oyunuBaslat()" style="display:none" disabled>▶ OYUNU BAŞLAT</button>
 <div id="bekleme-bilgi" style="color:#888;font-size:13px;text-align:center;margin-top:8px"></div>
@@ -190,21 +175,18 @@ input::placeholder{color:#555}
 
 <script>
 const socket=io();
-let oyuncuIsim='',odaId='',benimSiram=false,kaptan=false;
-let seciliKare=null,hedefKare=null,oyuncular=[],modSec='bot';
+let oyuncuIsim='',odaId='',benimSiram=false,kaptan=false,secModu='bot';
+let seciliKare=null,hedefKare=null,oyuncular=[];
 const renkler={};
 const renkListesi=['#e94560','#4ecdc4','#ffd700','#a855f7'];
 
 function katil(){
 oyuncuIsim=document.getElementById('isim').value.trim();
-modSec=document.getElementById('mod').value;
+secModu=document.getElementById('mod').value;
 const oda=document.getElementById('oda').value.trim();
 if(!oyuncuIsim)return alert('İsim gir!');
-if(oda){
-socket.emit('odaya_katil',{isim:oyuncuIsim,oda_id:oda});
-}else{
-socket.emit('oda_olustur',{isim:oyuncuIsim,mod:modSec});
-}
+if(oda)socket.emit('odaya_katil',{isim:oyuncuIsim,oda_id:oda});
+else socket.emit('oda_olustur',{isim:oyuncuIsim,mod:secModu});
 }
 
 function oyunuBaslat(){
@@ -223,6 +205,14 @@ odaId=d.oda_id;kaptan=true;
 document.getElementById('giris').style.display='none';
 document.getElementById('bekleme').style.display='block';
 document.getElementById('oda-kodu-goster').textContent=odaId;
+if(d.mod==='bot'){
+document.getElementById('oda-aciklama').textContent='Bot ile oynuyorsun!';
+document.getElementById('baslat-btn').style.display='block';
+document.getElementById('baslat-btn').disabled=false;
+document.getElementById('bekleme-bilgi').textContent='Hazır olunca başlat!';
+}else{
+document.getElementById('oda-aciklama').textContent='Arkadaşına bu kodu gönder!';
+}
 oyuncuListesiGuncelle(d.oyuncular,d.max_oyuncu);
 });
 
@@ -231,6 +221,7 @@ odaId=d.oda_id;
 document.getElementById('giris').style.display='none';
 document.getElementById('bekleme').style.display='block';
 document.getElementById('oda-kodu-goster').textContent=odaId;
+document.getElementById('oda-aciklama').textContent='Odaya katıldın!';
 oyuncuListesiGuncelle(d.oyuncular,d.max_oyuncu);
 });
 
@@ -246,10 +237,6 @@ document.getElementById('bekleme-bilgi').textContent='Hazır olunca başlat!';
 function oyuncuListesiGuncelle(liste,max){
 const div=document.getElementById('oyuncu-listesi');
 div.innerHTML='<b style="color:#e94560">Oyuncular ('+liste.length+'/'+max+'):</b><br>'+liste.map((o,i)=>'<span style="color:'+(renkListesi[i]||'#fff')+'">● '+o+'</span>').join('  ');
-if(kaptan&&liste.length>=2){
-document.getElementById('baslat-btn').style.display='block';
-document.getElementById('baslat-btn').disabled=false;
-}
 }
 
 socket.on('oyun_basladi',d=>{
@@ -294,6 +281,8 @@ document.getElementById('kazanan-text').textContent=(d.sure_bitti?'⏱️ SÜRE 
 const ist=document.getElementById('istatistikler');
 ist.innerHTML=Object.entries(d.istatistik).map(([o,s])=>'<div style="color:'+(renkler[o]||'#fff')+';margin:4px 0">'+o+': '+s+' kare</div>').join('');
 });
+
+socket.on('hata',d=>alert(d.mesaj));
 
 function turBilgiGuncelle(aktif,tur){
 benimSiram=(aktif===oyuncuIsim);
@@ -376,10 +365,10 @@ def oda_olustur(data):
     oda_id='P'+str(random.randint(1000,9999))
     mod=data.get('mod','2')
     max_oyuncu=4 if mod=='4' else 2
-    oyunlar[oda_id]={'oyuncular':[],'harita':harita_olustur(),'tur':1,'aktif':0,'sure':300,'basladi':False,'mod':mod,'max_oyuncu':max_oyuncu,'kaptan':data['isim']}
+    oyunlar[oda_id]={'oyuncular':[],'harita':harita_olustur(),'tur':1,'aktif':0,'sure':300,'basladi':False,'mod':mod,'max_oyuncu':max_oyuncu}
     join_room(oda_id)
     oyunlar[oda_id]['oyuncular'].append(data['isim'])
-    emit('oda_olusturuldu',{'oda_id':oda_id,'oyuncular':oyunlar[oda_id]['oyuncular'],'max_oyuncu':max_oyuncu})
+    emit('oda_olusturuldu',{'oda_id':oda_id,'oyuncular':oyunlar[oda_id]['oyuncular'],'max_oyuncu':max_oyuncu,'mod':mod})
 
 @socketio.on('odaya_katil')
 def odaya_katil(data):
