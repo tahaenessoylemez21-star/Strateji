@@ -77,7 +77,7 @@ def odaya_katil(data):
         join_room(oda_id)
         oyunlar[oda_id]['oyuncular'].append(data['isim'])
         emit('katilindi',{'oda_id':oda_id})
-        if len(oyunlar[oda_id]['oyuncular'])==4:
+        if len(oyunlar[oda_id]['oyuncular'])==2:
             oyunu_baslat(oda_id)
 def oyunu_baslat(oda_id):
     oyun=oyunlar[oda_id]
